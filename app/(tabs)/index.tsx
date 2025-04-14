@@ -1,26 +1,44 @@
 import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
-import { apparelItems } from '@/constants/apparelData';
-import { useState } from 'react';
+import { getApparelItems } from '@/constants/apparelData';
+import { useState, useRef } from 'react';
+import { useWardrobe } from '@/context/WardrobeContext';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function HomeScreen() {
   const [swipedItems, setSwipedItems] = useState<string[]>([]);
+  const [currentItems, setCurrentItems] = useState(getApparelItems(6));
+  const swiperRef = useRef<any>(null);
+  const { addToWardrobe } = useWardrobe();
 
   const handleSwipedRight = (index: number) => {
-    const swipedItem = apparelItems[index];
-    setSwipedItems([...swipedItems, swipedItem.id]);
-    // Here you would typically save the item to the wardrobe
-    console.log('Added to wardrobe:', swipedItem.name);
+    const item = currentItems[index];
+    setSwipedItems([...swipedItems, item.id]);
+    addToWardrobe(item);
+    console.log('Added to wardrobe:', item.name);
+    
+    // If we're near the end of the current items, load more
+    if (index >= currentItems.length - 3) {
+      const newItems = getApparelItems(currentItems.length + 6);
+      setCurrentItems(newItems);
+    }
   };
 
-  const renderCard = (item: typeof apparelItems[0]) => {
+  const renderCard = (item: typeof currentItems[0]) => {
     return (
       <View style={styles.card}>
-        <Image source={item.image} style={styles.cardImage} />
+        <Image 
+          source={{ uri: item.image }} 
+          style={styles.cardImage}
+          resizeMode="cover"
+        />
         <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          <Text style={styles.cardCategory}>{item.category}</Text>
-          <Text style={styles.cardDescription}>{item.description}</Text>
+          <View style={styles.textContainer}>
+            <Text style={styles.cardTitle}>{item.name}</Text>
+            <Text style={styles.cardCategory}>{item.category}</Text>
+            <Text numberOfLines={2} style={styles.cardDescription}>{item.description}</Text>
+          </View>
         </View>
       </View>
     );
@@ -28,13 +46,14 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Discover New Styles</Text>
+      {/* <Text style={styles.title}></Text> */}
       <View style={styles.swiperContainer}>
         <Swiper
-          cards={apparelItems}
+          ref={swiperRef}
+          cards={currentItems}
           renderCard={renderCard}
           onSwipedRight={handleSwipedRight}
-          onSwipedLeft={(index) => console.log('Skipped:', apparelItems[index].name)}
+          onSwipedLeft={(index) => console.log('Skipped:', currentItems[index].name)}
           backgroundColor={'#FFF0F5'}
           stackSize={3}
           stackSeparation={15}
@@ -42,8 +61,8 @@ export default function HomeScreen() {
           animateCardOpacity
           swipeBackCard
           verticalSwipe={false}
-          cardVerticalMargin={80}
-          cardHorizontalMargin={20}
+          cardVerticalMargin={35}
+          cardHorizontalMargin={10}
         />
       </View>
     </View>
@@ -55,20 +74,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF0F5',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF6B8B',
-    textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 10,
-  },
   swiperContainer: {
     flex: 1,
-    marginTop: 20,
   },
   card: {
-    flex: 1,
+    height: SCREEN_HEIGHT * 0.72,
     borderRadius: 20,
     backgroundColor: 'white',
     shadowColor: '#000',
@@ -79,31 +89,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    marginHorizontal: 20,
-    marginVertical: 10,
   },
   cardImage: {
     width: '100%',
-    height: '70%',
+    height: '85%',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
   cardContent: {
-    padding: 15,
+    padding: 12,
+    height: '15%',
+    justifyContent: 'center',
+  },
+  textContainer: {
+    gap: 3,
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#FF6B8B',
-    marginBottom: 5,
   },
   cardCategory: {
-    fontSize: 16,
+    fontSize: 13,
     color: '#FFB6C1',
-    marginBottom: 5,
   },
   cardDescription: {
-    fontSize: 14,
+    fontSize: 11,
     color: '#666',
+    marginTop: 1,
   },
 });
