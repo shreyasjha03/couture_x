@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { WardrobeProvider } from '@/context/WardrobeContext';
+import { ProfileProvider } from '@/context/ProfileContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -30,14 +31,16 @@ export default function RootLayout() {
   }
 
   return (
-    <WardrobeProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </WardrobeProvider>
+    <ProfileProvider>
+      <WardrobeProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </WardrobeProvider>
+    </ProfileProvider>
   );
 }
 

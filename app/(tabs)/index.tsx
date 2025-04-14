@@ -1,28 +1,71 @@
-import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, Dimensions, Alert } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { getApparelItems } from '@/constants/apparelData';
 import { useState, useRef } from 'react';
 import { useWardrobe } from '@/context/WardrobeContext';
+import { useProfile } from '@/context/ProfileContext';
+import { useRouter } from 'expo-router';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function HomeScreen() {
+  const { addToWardrobe, addToLiked, addToDisliked } = useWardrobe();
+  const { currentProfile } = useProfile();
+  const router = useRouter();
   const [swipedItems, setSwipedItems] = useState<string[]>([]);
   const [currentItems, setCurrentItems] = useState(getApparelItems(6));
   const swiperRef = useRef<any>(null);
-  const { addToWardrobe } = useWardrobe();
+
+  const promptLogin = () => {
+    Alert.alert(
+      'Login Required',
+      'Please login to save items to your wardrobe',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Login',
+          onPress: () => router.push('/(tabs)/profile')
+        }
+      ]
+    );
+    // Reset card position
+    swiperRef.current?.swipeBack();
+  };
 
   const handleSwipedRight = (index: number) => {
-    const item = currentItems[index];
-    setSwipedItems([...swipedItems, item.id]);
-    addToWardrobe(item);
-    console.log('Added to wardrobe:', item.name);
-    
-    // If we're near the end of the current items, load more
-    if (index >= currentItems.length - 3) {
-      const newItems = getApparelItems(currentItems.length + 6);
-      setCurrentItems(newItems);
+    if (!currentProfile) {
+      promptLogin();
+      return;
     }
+
+    const swipedItem = currentItems[index];
+    addToWardrobe(swipedItem);
+    addToLiked(swipedItem);
+    
+    // Load more items if needed
+    if (index === currentItems.length - 2) {
+      loadMoreItems();
+    }
+  };
+
+  const handleSwipedLeft = (index: number) => {
+    if (!currentProfile) {
+      promptLogin();
+      return;
+    }
+
+    const swipedItem = currentItems[index];
+    addToDisliked(swipedItem);
+    
+    // Load more items if needed
+    if (index === currentItems.length - 2) {
+      loadMoreItems();
+    }
+  };
+
+  const loadMoreItems = () => {
+    const newItems = getApparelItems(currentItems.length + 6);
+    setCurrentItems(newItems);
   };
 
   const renderCard = (item: typeof currentItems[0]) => {
@@ -53,7 +96,7 @@ export default function HomeScreen() {
           cards={currentItems}
           renderCard={renderCard}
           onSwipedRight={handleSwipedRight}
-          onSwipedLeft={(index) => console.log('Skipped:', currentItems[index].name)}
+          onSwipedLeft={handleSwipedLeft}
           backgroundColor={'#FFF0F5'}
           stackSize={3}
           stackSeparation={15}
